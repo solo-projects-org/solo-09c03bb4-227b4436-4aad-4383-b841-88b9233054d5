@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公交清分数仓 · 换乘标志口径调整影响分析</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --panel: #ffffff;
+    --border: #dce1ea;
+    --text: #1f2733;
+    --muted: #667085;
+    --primary: #1f5eff;
+    --primary-soft: #e8efff;
+    --danger: #d92d20;
+    --danger-soft: #fef3f2;
+    --warn: #b54708;
+    --warn-soft: #fffaeb;
+    --ok: #067647;
+    --ok-soft: #ecfdf3;
+    --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(120deg, #102a6b, #1f5eff);
+    color: #fff;
+    padding: 18px 28px;
+  }
+  header h1 { margin: 0; font-size: 19px; font-weight: 650; }
+  header p { margin: 4px 0 0; opacity: .82; font-size: 13px; }
+  .layout {
+    max-width: 1280px;
+    margin: 22px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    width: 100%;
+    padding: 10px;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #1a4fd6; color: #fff; }
+  .btn-primary:disabled { background: #a9bff5; border-color: #a9bff5; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+  .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  .file-name {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ok);
+    word-break: break-all;
+  }
+  select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  select:focus { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
+  .field-list {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 6px;
+  }
+  .table-group { border-bottom: 1px solid var(--border); }
+  .table-group:last-child { border-bottom: none; }
+  .table-title {
+    padding: 8px 12px;
+    background: #f8fafc;
+    font-weight: 650;
+    font-size: 12.5px;
+    color: #344054;
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .table-title .cnt { color: var(--muted); font-weight: 400; }
+  .field-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    border-top: 1px solid #f0f2f6;
+  }
+  .field-item:hover { background: var(--primary-soft); }
+  .field-item input { accent-color: var(--primary); }
+  .field-item.target { background: var(--primary-soft); font-weight: 600; }
+  .model-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #f2f4f7;
+    border-radius: 12px;
+    font-size: 11.5px;
+    color: #475467;
+    margin: 2px 4px 2px 0;
+  }
+  .model-chip .arr { color: #98a2b3; margin: 0 3px; }
+  .alert {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 8px;
+  }
+  .alert-error { background: var(--danger-soft); color: var(--danger); border: 1px solid #fecdca; }
+  .alert-info { background: var(--primary-soft); color: #1849a9; border: 1px solid #b2ccff; }
+  .alert-warn { background: var(--warn-soft); color: var(--warn); border: 1px solid #fedf89; }
+  .stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fbfcfe;
+  }
+  .stat .num { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .stat .lbl { font-size: 12px; color: var(--muted); }
+  .model-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .model-head {
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .model-head .name { font-weight: 650; font-size: 14px; }
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .tag-condition { background: #fef3f2; color: var(--danger); border: 1px solid #fecdca; }
+  .tag-value { background: var(--ok-soft); color: var(--ok); border: 1px solid #abefc6; }
+  .tag-mixed { background: var(--warn-soft); color: var(--warn); border: 1px solid #fedf89; }
+  .col-table { width: 100%; border-collapse: collapse; }
+  .col-table th, .col-table td {
+    text-align: left;
+    padding: 9px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f2f6;
+    vertical-align: top;
+  }
+  .col-table th {
+    background: #fcfdff;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .col-table tr:last-child td { border-bottom: none; }
+  .col-name { font-family: "SF Mono", Menlo, Consolas, monospace; font-weight: 600; }
+  .path-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .path-step {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .path-step .arrow { color: #98a2b3; }
+  .node-ref {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #f2f4f7;
+    padding: 1px 7px;
+    border-radius: 6px;
+    color: #344054;
+  }
+  .node-ref.source { background: #ecfdf3; color: #05603a; }
+  .via {
+    font-size: 10.5px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  .via.value { background: var(--ok-soft); color: var(--ok); }
+  .via.condition { background: var(--danger-soft); color: var(--danger); }
+  .via.mixed { background: var(--warn-soft); color: var(--warn); }
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+  .empty .big { font-size: 38px; margin-bottom: 8px; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .meta-line { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  details.deps { margin-top: 6px; }
+  details.deps summary {
+    cursor: pointer;
+    color: var(--primary);
+    font-size: 12px;
+    user-select: none;
+  }
+  .upstream-trees { font-size: 12px; color: #475467; margin-top: 8px; }
+  .loading-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,.6);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+  }
+  .loading-mask.show { display: flex; }
+  .loading-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow);
+  }
+  .loading-box .spinner { border-color: #cfd8ec; border-top-color: var(--primary); }
+</style>
+</head>
+<body>
+<header>
+  <h1>公交清分数仓 · 换乘标志口径调整影响分析</h1>
+  <p>基于 SQLGlot 解析 DuckDB SQL，定位待改源表字段影响的模型输出列与依赖路径</p>
+</header>
+
+<div class="layout">
+  <!-- 左侧：数据源与字段选择 -->
+  <div>
+    <div class="panel">
+      <h2><span class="step-badge">1</span>载入字段清单与模型 SQL</h2>
+      <div class="btn-row">
+        <button class="btn" id="btn-sample">载入清分样例</button>
+        <label class="btn" style="margin:0">
+          上传 JSON
+          <input type="file" id="file-input" accept=".json,application/json" hidden>
+        </label>
+      </div>
+      <div class="file-name" id="file-name"></div>
+      <p class="hint">JSON 需包含 <code>source_tables</code>（源表字段清单）与 <code>models</code>（各模型 SQL）两个数组。</p>
+      <div id="model-deps" class="upstream-trees"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2><span class="step-badge">2</span>选择待调整字段</h2>
+      <select id="table-select" disabled>
+        <option value="">— 先选择源表 —</option>
+      </select>
+      <div class="field-list" id="field-list">
+        <div class="empty" style="padding:24px">请先载入数据</div>
+      </div>
+      <p class="hint">单选一个源表字段作为口径变更的起点。</p>
+      <button class="btn-primary" id="btn-analyze" disabled style="margin-top:14px">
+        分析受影响模型列
+      </button>
+    </div>
+  </div>
+
+  <!-- 右侧：分析结果 -->
+  <div class="panel">
+    <h2><span class="step-badge">3</span>受影响模型列与依赖路径</h2>
+    <div id="alert-box"></div>
+    <div id="result-body">
+      <div class="empty">
+        <div class="big">🔍</div>
+        <div>载入 JSON 并选择待调整字段后，在此查看受影响的模型列<br>及每列一条可回溯到源表的依赖路径。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-mask" id="loading">
+  <div class="loading-box"><span class="spinner"></span><span id="loading-text">解析中…</span></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let payload = null;
+let schemas = [];
+let modelDeps = [];
+let targetTable = "";
+let targetColumn = "";
+
+function setLoading(on, text) {
+  $("loading").classList.toggle("show", on);
+  if (text) $("loading-text").textContent = text;
+}
+
+function showAlert(kind, msg) {
+  const box = $("alert-box");
+  if (!msg) { box.innerHTML = ""; return; }
+  const icon = kind === "error" ? "⛔" : kind === "warn" ? "⚠️" : "ℹ️";
+  box.innerHTML = `<div class="alert alert-${kind}"><span>${icon}</span><span>${escapeHtml(msg)}</span></div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function postJSON(url, body) {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return resp.json();
+}
+
+async function loadPayload(data, label) {
+  payload = data;
+  targetTable = ""; targetColumn = "";
+  $("file-name").textContent = label;
+  showAlert("", "");
+  setLoading(true, "校验 SQL 与字段引用…");
+  try {
+    const res = await postJSON("/api/validate", payload);
+    if (!res.ok) {
+      showAlert("error", res.error);
+      resetWorkspace();
+      return;
+    }
+    schemas = res.source_tables;
+    modelDeps = res.models;
+    renderTableSelect();
+    renderModelDeps();
+    renderFieldList();
+    $("btn-analyze").disabled = true;
+    $("result-body").innerHTML = `<div class="empty"><div class="big">✅</div>
+      <div>SQL 校验通过，共 ${schemas.length} 张源表、${modelDeps.length} 个模型。<br>请在左侧选择待调整字段。</div></div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+function resetWorkspace() {
+  schemas = []; modelDeps = [];
+  $("table-select").innerHTML = '<option value="">— 先选择源表 —</option>';
+  $("table-select").disabled = true;
+  $("field-list").innerHTML = '<div class="empty" style="padding:24px">请先载入数据</div>';
+  $("model-deps").innerHTML = "";
+  $("btn-analyze").disabled = true;
+}
+
+function renderTableSelect() {
+  const sel = $("table-select");
+  sel.innerHTML = '<option value="">— 选择源表 —</option>' +
+    schemas.map(t => `<option value="${escapeHtml(t.table)}">${escapeHtml(t.table)}（${t.columns.length} 列）</option>`).join("");
+  sel.disabled = false;
+  sel.value = "";
+}
+
+function renderModelDeps() {
+  if (!modelDeps.length) { $("model-deps").innerHTML = ""; return; }
+  $("model-deps").innerHTML = "<div style='margin-bottom:6px;color:#667085'>模型读取关系：</div>" +
+    modelDeps.map(m => {
+      const ups = m.upstream.length
+        ? m.upstream.map(u => `<span class="model-chip">${escapeHtml(u)}</span>`).join("")
+        : '<span class="model-chip">仅源表</span>';
+      return `<div style="margin:4px 0"><span class="model-chip" style="background:#e8efff;color:#1849a9">${escapeHtml(m.name)}</span><span class="arr">←</span>${ups}</div>`;
+    }).join("");
+}
+
+function renderFieldList() {
+  const table = $("table-select").value;
+  targetTable = table;
+  const box = $("field-list");
+  if (!table) {
+    box.innerHTML = '<div class="empty" style="padding:24px">请先选择源表</div>';
+    return;
+  }
+  const t = schemas.find(x => x.table === table);
+  box.innerHTML = t.columns.map(c =>
+    `<label class="field-item" data-col="${escapeHtml(c)}">
+       <input type="radio" name="target-col" value="${escapeHtml(c)}">
+       <span>${escapeHtml(c)}</span>
+     </label>`).join("");
+  box.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      targetColumn = inp.value;
+      box.querySelectorAll(".field-item").forEach(el =>
+        el.classList.toggle("target", el.dataset.col === targetColumn));
+      $("btn-analyze").disabled = false;
+    });
+  });
+}
+
+$("table-select").addEventListener("change", () => {
+  targetColumn = "";
+  renderFieldList();
+  $("btn-analyze").disabled = true;
+});
+
+$("file-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setLoading(true, "读取文件…");
+  try {
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (err) { showAlert("error", "JSON 解析失败：" + err.message); setLoading(false); return; }
+    await loadPayload(data, "已上传：" + file.name);
+  } finally {
+    setLoading(false);
+    e.target.value = "";
+  }
+});
+
+$("btn-sample").addEventListener("click", async () => {
+  setLoading(true, "载入清分样例…");
+  try {
+    const resp = await fetch("/api/sample");
+    const data = await resp.json();
+    await loadPayload(data, "清分样例 sample_clearing.json");
+  } finally {
+    setLoading(false);
+  }
+});
+
+$("btn-analyze").addEventListener("click", async () => {
+  if (!targetTable || !targetColumn) return;
+  setLoading(true, "血缘传播分析中…");
+  showAlert("", "");
+  try {
+    const qs = `table=${encodeURIComponent(targetTable)}&column=${encodeURIComponent(targetColumn)}`;
+    const res = await postJSON("/api/analyze?" + qs, payload);
+    if (!res.ok) {
+      showAlert("error", res.error);
+      $("result-body").innerHTML = `<div class="empty"><div class="big">⛔</div><div>分析已停止，请根据上方提示修正后重试。</div></div>`;
+      return;
+    }
+    renderResult(res.result);
+  } finally {
+    setLoading(false);
+  }
+});
+
+function viaTag(via) {
+  const map = { value: ["tag-value", "值依赖"], condition: ["tag-condition", "条件污染"], mixed: ["tag-mixed", "混合"] };
+  const [cls, lbl] = map[via] || ["tag-value", via];
+  return `<span class="tag ${cls}">${lbl}</span>`;
+}
+
+function renderPath(path) {
+  return `<div class="path-chain">` + path.map((step, i) => {
+    if (step.type === "source") {
+      return `<div class="path-step"><span class="node-ref source">源 ${escapeHtml(step.relation)}.${escapeHtml(step.column)}</span></div>`;
+    }
+    const arrow = i > 0 ? '<span class="arrow">→</span>' : "";
+    const via = step.via ? `<span class="via ${step.via}">${step.via === "value" ? "值传递" : "条件"}</span>` : "";
+    const pred = step.predicate ? `<span class="via condition">${escapeHtml(step.predicate)}</span>` : "";
+    return `<div class="path-step">${arrow}
+      <span class="node-ref">${escapeHtml(step.model)} · ${escapeHtml(step.query)}</span>
+      <span class="node-ref">${escapeHtml(step.input_relation)}.${escapeHtml(step.input_column)}</span>
+      <span class="arrow">→</span><span class="node-ref">${escapeHtml(step.output)}</span>
+      ${via}${pred}</div>`;
+  }).join("") + `</div>`;
+}
+
+function renderResult(r) {
+  if (!r.affected_models.length) {
+    $("result-body").innerHTML = `<div class="empty"><div class="big">🫙</div>
+      <div>字段 <code>${escapeHtml(r.target.table)}.${escapeHtml(r.target.column)}</code><br>未被任何模型读取，没有受影响的输出列。</div></div>`;
+    return;
+  }
+  const stats = `
+    <div class="stats">
+      <div class="stat"><div class="num">${r.model_count}</div><div class="lbl">受影响模型</div></div>
+      <div class="stat"><div class="num">${r.column_count}</div><div class="lbl">受影响输出列</div></div>
+      <div class="stat"><div class="num">${r.affected_models.filter(m => m.condition_tainted).length}</div><div class="lbl">含条件污染模型</div></div>
+    </div>
+    <div class="alert alert-info">
+      <span>🎯</span>
+      <span>起点字段：<b>${escapeHtml(r.target.table)}.${escapeHtml(r.target.column)}</b>。
+      字段进入 JOIN ON / WHERE（含 IN 子查询）时，该查询及其下游实际读取者的<b>全部输出列</b>按条件污染标出。</span>
+    </div>`;
+
+  const cards = r.affected_models.map(m => `
+    <div class="model-card">
+      <div class="model-head">
+        <span class="name">${escapeHtml(m.model)}</span>
+        <span>
+          ${m.condition_tainted ? '<span class="tag tag-condition">含条件污染</span>' : '<span class="tag tag-value">纯值依赖</span>'}
+          <span class="meta-line" style="display:inline;margin-left:8px">
+            ${m.condition_queries.length ? "命中条件的查询：" + m.condition_queries.map(escapeHtml).join("、") : ""}
+          </span>
+        </span>
+      </div>
+      <table class="col-table">
+        <thead><tr><th style="width:170px">受影响输出列</th><th style="width:90px">依赖方式</th><th>一条依赖路径（回溯至源表）</th></tr></thead>
+        <tbody>
+          ${m.columns.map(c => `
+            <tr>
+              <td class="col-name">${escapeHtml(c.column)}</td>
+              <td>${viaTag(c.via)}</td>
+              <td>${renderPath(c.path)}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`).join("");
+
+  $("result-body").innerHTML = stats + cards;
+}
+</script>
+</body>
+</html>

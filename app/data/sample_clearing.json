@@ -1,0 +1,53 @@
+{
+  "scenario": "公交清分数仓 · 换乘标志(transfer_flag)口径调整影响分析样例",
+  "source_tables": [
+    {
+      "table": "ods_card_transaction",
+      "columns": [
+        "transaction_id",
+        "card_id",
+        "line_id",
+        "vehicle_id",
+        "transaction_time",
+        "amount",
+        "transfer_flag",
+        "city_code"
+      ]
+    },
+    {
+      "table": "ods_card_info",
+      "columns": [
+        "card_id",
+        "card_type",
+        "issue_city",
+        "status"
+      ]
+    },
+    {
+      "table": "dim_bus_line",
+      "columns": [
+        "line_id",
+        "line_name",
+        "line_type",
+        "company_id"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "name": "dwd_card_transaction_detail",
+      "description": "刷卡交易明细宽表：CTE 清洗卡信息与交易，关联线路维度，并按换乘标志筛选",
+      "sql": "WITH valid_card AS (SELECT ci.card_id AS card_id, ci.card_type AS card_type, ci.issue_city AS issue_city FROM ods_card_info ci WHERE ci.status = 'ACTIVE'), priced AS (SELECT t.transaction_id AS transaction_id, t.card_id AS card_id, t.line_id AS line_id, t.vehicle_id AS vehicle_id, t.transaction_time AS transaction_time, t.amount AS amount, t.transfer_flag AS transfer_flag FROM ods_card_transaction t WHERE t.city_code = '3301') SELECT p.transaction_id AS transaction_id, p.card_id AS card_id, vc.card_type AS card_type, p.line_id AS line_id, dl.line_name AS line_name, p.vehicle_id AS vehicle_id, p.transaction_time AS transaction_time, p.amount AS amount, p.transfer_flag AS transfer_flag FROM priced p INNER JOIN valid_card vc ON p.card_id = vc.card_id INNER JOIN dim_bus_line dl ON p.line_id = dl.line_id WHERE p.transfer_flag = 0"
+    },
+    {
+      "name": "dws_line_transfer_summary",
+      "description": "线路换乘明细层：派生换乘分类列并关联线路公司，筛选常规公交线路",
+      "sql": "SELECT d.line_id AS line_id, d.line_name AS line_name, CASE WHEN d.transfer_flag = 1 THEN 'Y' ELSE 'N' END AS is_transfer, d.amount AS txn_amount, l.company_id AS company_id FROM dwd_card_transaction_detail d INNER JOIN dim_bus_line l ON d.line_id = l.line_id WHERE l.line_type = 'BUS'"
+    },
+    {
+      "name": "ads_transfer_settlement",
+      "description": "换乘结算广告层：CTE 先筛换乘线路与公司维度，再关联明细并在 WHERE 中使用换乘标志",
+      "sql": "WITH line_txn AS (SELECT s.line_id AS line_id, s.line_name AS line_name, s.is_transfer AS is_transfer, s.txn_amount AS txn_amount FROM dws_line_transfer_summary s WHERE s.is_transfer = 'Y'), company_dim AS (SELECT l.line_id AS line_id, l.company_id AS company_id FROM dim_bus_line l) SELECT lt.line_id AS line_id, lt.line_name AS line_name, cd.company_id AS company_id, lt.is_transfer AS is_transfer, lt.txn_amount AS settlement_amount FROM line_txn lt INNER JOIN company_dim cd ON lt.line_id = cd.line_id INNER JOIN dwd_card_transaction_detail d ON lt.line_id = d.line_id WHERE d.transfer_flag = 1"
+    }
+  ]
+}
