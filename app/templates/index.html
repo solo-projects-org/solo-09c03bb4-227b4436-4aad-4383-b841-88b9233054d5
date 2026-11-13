@@ -34,9 +34,23 @@
     background: linear-gradient(120deg, #102a6b, #1f5eff);
     color: #fff;
     padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   header h1 { margin: 0; font-size: 19px; font-weight: 650; }
   header p { margin: 4px 0 0; opacity: .82; font-size: 13px; }
+  header nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,.45);
+    border-radius: 8px;
+    padding: 6px 12px;
+  }
+  header nav a:hover { background: rgba(255,255,255,.15); }
   .layout {
     max-width: 1280px;
     margin: 22px auto;
@@ -305,8 +319,11 @@
 </head>
 <body>
 <header>
-  <h1>公交清分数仓 · 换乘标志口径调整影响分析</h1>
-  <p>基于 SQLGlot 解析 DuckDB SQL，定位待改源表字段影响的模型输出列与依赖路径</p>
+  <div>
+    <h1>公交清分数仓 · 换乘标志口径调整影响分析</h1>
+    <p>基于 SQLGlot 解析 DuckDB SQL，定位待改源表字段影响的模型输出列与依赖路径</p>
+  </div>
+  <nav><a href="/posting">复算差额补记 →</a></nav>
 </header>
 
 <div class="layout">

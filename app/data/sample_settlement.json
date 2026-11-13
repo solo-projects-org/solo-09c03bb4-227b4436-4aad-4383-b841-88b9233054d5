@@ -1,0 +1,39 @@
+{
+  "scenario": "公交清分 · 交易级结算补记样例（复算后一笔交易换公司）",
+  "source_tables": [
+    {
+      "table": "ods_card_transaction",
+      "columns": [
+        "transaction_id",
+        "card_id",
+        "line_id",
+        "vehicle_id",
+        "transaction_time",
+        "amount",
+        "transfer_flag",
+        "city_code"
+      ]
+    },
+    {
+      "table": "dim_bus_line",
+      "columns": [
+        "line_id",
+        "line_name",
+        "line_type",
+        "company_id"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "name": "dwd_card_transaction_detail",
+      "description": "刷卡交易明细宽表：清洗城市内刷卡交易",
+      "sql": "SELECT t.transaction_id AS transaction_id, t.card_id AS card_id, t.line_id AS line_id, t.vehicle_id AS vehicle_id, t.transaction_time AS transaction_time, t.amount AS amount FROM ods_card_transaction t WHERE t.city_code = '3301'"
+    },
+    {
+      "name": "ads_transaction_settlement",
+      "description": "交易级结算明细：每笔交易一行，输出交易号、结算公司与结算金额（整数分）",
+      "sql": "SELECT d.transaction_id AS transaction_id, l.company_id AS company_id, d.amount AS settlement_amount FROM dwd_card_transaction_detail d INNER JOIN dim_bus_line l ON d.line_id = l.line_id WHERE l.line_type = 'BUS'"
+    }
+  ]
+}

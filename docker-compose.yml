@@ -1,16 +1,24 @@
 services:
-  lineage-web:
+  clearing-web:
     build:
       context: ./app
       dockerfile: Dockerfile
-    image: clearing-lineage-web:latest
-    container_name: clearing-lineage-web
+    image: clearing-web:latest
+    container_name: clearing-web
+    environment:
+      # SQLite 落库位置（差额分录持久化）
+      POSTING_DB_PATH: /data/posting.db
+    volumes:
+      - clearing-data:/data
     ports:
       - "8000:8000"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/posting', timeout=5)"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 8s
+
+volumes:
+  clearing-data:

@@ -5,3 +5,6 @@ tests/
 .git/
 .gitignore
 *.md
+*.db
+*.db-wal
+*.db-shm

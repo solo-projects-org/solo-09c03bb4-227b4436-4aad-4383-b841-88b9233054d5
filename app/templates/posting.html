@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公交清分 · 复算差额补记工作台</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --panel: #ffffff;
+    --border: #dce1ea;
+    --text: #1f2733;
+    --muted: #667085;
+    --primary: #1f5eff;
+    --primary-soft: #e8efff;
+    --danger: #d92d20;
+    --danger-soft: #fef3f2;
+    --warn: #b54708;
+    --warn-soft: #fffaeb;
+    --ok: #067647;
+    --ok-soft: #ecfdf3;
+    --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(120deg, #102a6b, #1f5eff);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { margin: 0; font-size: 19px; font-weight: 650; }
+  header p { margin: 4px 0 0; opacity: .82; font-size: 13px; }
+  header nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,.45);
+    border-radius: 8px;
+    padding: 6px 12px;
+  }
+  header nav a:hover { background: rgba(255,255,255,.15); }
+  .layout {
+    max-width: 1280px;
+    margin: 22px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    width: 100%;
+    padding: 10px;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #1a4fd6; color: #fff; }
+  .btn-primary:disabled { background: #a9bff5; border-color: #a9bff5; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+  .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  .file-name {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ok);
+    word-break: break-all;
+  }
+  label.field-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #344054;
+    margin: 12px 0 4px;
+  }
+  select, input[type=text], input[type=date] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+  }
+  select:focus, input:focus { outline: 2px solid var(--primary-soft); border-color: var(--primary); }
+  input:disabled, select:disabled { background: #f2f4f7; color: #98a2b3; }
+  .alert {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 8px;
+  }
+  .alert-error { background: var(--danger-soft); color: var(--danger); border: 1px solid #fecdca; }
+  .alert-info { background: var(--primary-soft); color: #1849a9; border: 1px solid #b2ccff; }
+  .alert-ok { background: var(--ok-soft); color: var(--ok); border: 1px solid #abefc6; }
+  .alert-warn { background: var(--warn-soft); color: var(--warn); border: 1px solid #fedf89; }
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .tag-current { background: var(--ok-soft); color: var(--ok); border: 1px solid #abefc6; }
+  .tag-initial { background: var(--primary-soft); color: #1849a9; border: 1px solid #b2ccff; }
+  .tag-recalc { background: var(--warn-soft); color: var(--warn); border: 1px solid #fedf89; }
+  .tag-plain { background: #f2f4f7; color: #475467; border: 1px solid var(--border); }
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th, .data-table td {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f2f6;
+    vertical-align: top;
+  }
+  .data-table th {
+    background: #fcfdff;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .amount-pos { color: var(--ok); font-weight: 650; }
+  .amount-neg { color: var(--danger); font-weight: 650; }
+  .empty {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--muted);
+  }
+  .empty .big { font-size: 34px; margin-bottom: 8px; }
+  .state-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .state-line .lbl { color: var(--muted); }
+  .model-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #f2f4f7;
+    border-radius: 12px;
+    font-size: 11.5px;
+    color: #475467;
+    margin: 2px 4px 2px 0;
+  }
+  .model-chip.ok { background: var(--ok-soft); color: #05603a; }
+  .model-chip.no { background: #f2f4f7; color: #98a2b3; }
+  .model-list { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .loading-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,.6);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+  }
+  .loading-mask.show { display: flex; }
+  .loading-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow);
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #cfd8ec;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .entry-summary { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .link-btn {
+    color: var(--primary);
+    font-size: 12.5px;
+    text-decoration: none;
+  }
+  .link-btn:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>公交清分 · 复算差额补记工作台</h1>
+    <p>流水补传后对已入账日复算：按交易对比两批，差额分录交财务补记</p>
+  </div>
+  <nav><a href="/">← 血缘影响分析</a></nav>
+</header>
+
+<div class="layout">
+  <!-- 左侧：载入模型 JSON、选择结算模型与业务日 -->
+  <div>
+    <div class="panel">
+      <h2><span class="step-badge">1</span>载入模型 JSON</h2>
+      <div class="btn-row">
+        <button class="btn" id="btn-sample">载入结算样例</button>
+        <label class="btn" style="margin:0">
+          上传 JSON
+          <input type="file" id="file-input" accept=".json,application/json" hidden>
+        </label>
+      </div>
+      <div class="file-name" id="file-name"></div>
+      <p class="hint">沿用现有 JSON / SQL 校验（不执行 SQL），仅用于确认结算模型及其输出列。</p>
+      <div class="model-list" id="model-list"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step-badge">2</span>选择结算模型与业务日</h2>
+      <label class="field-label">结算模型（须输出交易号/公司/金额三列）</label>
+      <select id="model-select" disabled>
+        <option value="">— 先载入模型 JSON —</option>
+      </select>
+      <label class="field-label">业务日</label>
+      <input type="date" id="biz-date" disabled>
+      <div id="state-box" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- 右侧：登记初始批、提交复算、查看补记单 -->
+  <div>
+    <div id="alert-box"></div>
+
+    <div class="panel">
+      <h2><span class="step-badge">3</span>登记初始入账批</h2>
+      <label class="field-label">批号</label>
+      <input type="text" id="init-batch" placeholder="如 INIT-20250601" disabled>
+      <label class="field-label">该模型导出的整日 CSV（transaction_id,company_id,settlement_amount）</label>
+      <div class="btn-row">
+        <label class="btn" style="margin:0">
+          选择 CSV
+          <input type="file" id="init-file" accept=".csv,text/csv" hidden>
+        </label>
+        <button class="btn" id="btn-init-sample">使用样例初始 CSV</button>
+      </div>
+      <div class="file-name" id="init-file-name"></div>
+      <button class="btn-primary" id="btn-init" disabled style="margin-top:12px">登记初始入账批</button>
+      <p class="hint">每个模型、业务日只能登记一次初始入账批，初始批<b>不出分录</b>。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step-badge">4</span>提交复算结果</h2>
+      <label class="field-label">依据批号（须为当前依据批）</label>
+      <input type="text" id="basis-batch" placeholder="如 INIT-20250601" disabled>
+      <label class="field-label">新批号</label>
+      <input type="text" id="new-batch" placeholder="如 RECALC-20250601-1" disabled>
+      <label class="field-label">复算后的整日 CSV（同一模型导出）</label>
+      <div class="btn-row">
+        <label class="btn" style="margin:0">
+          选择 CSV
+          <input type="file" id="recalc-file" accept=".csv,text/csv" hidden>
+        </label>
+        <button class="btn" id="btn-recalc-sample">使用样例复算 CSV</button>
+      </div>
+      <div class="file-name" id="recalc-file-name"></div>
+      <button class="btn-primary" id="btn-recalc" disabled style="margin-top:12px">生成补记单</button>
+      <p class="hint">同公司补差额；换公司冲回旧公司全额、记新公司全额；新增记入、消失冲回；零额不出分录。依据批已被替换或文件有误将退回，不改当前批。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step-badge">5</span>补记单分录</h2>
+      <div id="entries-body">
+        <div class="empty">
+          <div class="big">🧾</div>
+          <div>提交复算后，在此查看差额分录并下载 CSV。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-mask" id="loading">
+  <div class="loading-box"><span class="spinner"></span><span id="loading-text">处理中…</span></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const SETTLEMENT_COLS = ["transaction_id", "company_id", "settlement_amount"];
+let payload = null;
+let settlementModels = [];   // 可作为结算模型的模型名
+let initFile = null;         // File 对象（本地上传或样例）
+let recalcFile = null;
+let currentBatchId = null;
+
+function setLoading(on, text) {
+  $("loading").classList.toggle("show", on);
+  if (text) $("loading-text").textContent = text;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function showAlert(kind, msg) {
+  const box = $("alert-box");
+  if (!msg) { box.innerHTML = ""; return; }
+  const icon = kind === "error" ? "⛔" : kind === "ok" ? "✅" : kind === "warn" ? "⚠️" : "ℹ️";
+  box.innerHTML = `<div class="alert alert-${kind}"><span>${icon}</span><span>${escapeHtml(msg)}</span></div>`;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function apiJSON(url, options) {
+  const resp = await fetch(url, options);
+  let body = null;
+  try { body = await resp.json(); } catch (e) { /* 非 JSON 响应 */ }
+  if (!resp.ok) {
+    throw new Error((body && body.error) || `请求失败（HTTP ${resp.status}）`);
+  }
+  return body;
+}
+
+// ---------------------------------------------------------------------------
+// 1. 载入模型 JSON
+// ---------------------------------------------------------------------------
+async function loadPayload(data, label) {
+  setLoading(true, "校验模型 JSON 与 SQL…");
+  showAlert("", "");
+  try {
+    const res = await apiJSON("/api/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    payload = data;
+    $("file-name").textContent = label;
+    settlementModels = res.models
+      .filter(m => SETTLEMENT_COLS.every(c => m.output_columns.includes(c)))
+      .map(m => m.name);
+    renderModelList(res.models);
+    renderModelSelect();
+    setWorkflowEnabled(true);
+    await refreshState();
+    showAlert("ok", `模型 JSON 校验通过：${res.models.length} 个模型，其中 ${settlementModels.length} 个可作为结算模型。`);
+  } catch (err) {
+    payload = null;
+    settlementModels = [];
+    renderModelList([]);
+    renderModelSelect();
+    setWorkflowEnabled(false);
+    showAlert("error", err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderModelList(models) {
+  const box = $("model-list");
+  if (!models.length) { box.innerHTML = ""; return; }
+  box.innerHTML = "<div style='margin-bottom:4px'>模型清单（绿色可登记结算批）：</div>" +
+    models.map(m => {
+      const ok = SETTLEMENT_COLS.every(c => m.output_columns.includes(c));
+      const cls = ok ? "ok" : "no";
+      const tip = ok ? "输出列齐全" : "缺少 " + SETTLEMENT_COLS.filter(c => !m.output_columns.includes(c)).join("/");
+      return `<span class="model-chip ${cls}" title="${escapeHtml(tip)}">${escapeHtml(m.name)}</span>`;
+    }).join("");
+}
+
+function renderModelSelect() {
+  const sel = $("model-select");
+  sel.innerHTML = '<option value="">— 选择结算模型 —</option>' +
+    settlementModels.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+  sel.disabled = !settlementModels.length;
+}
+
+function setWorkflowEnabled(on) {
+  $("biz-date").disabled = !on;
+  ["init-batch", "basis-batch", "new-batch"].forEach(id => $(id).disabled = !on);
+  updateButtons();
+}
+
+function updateButtons() {
+  const ready = !!payload && !!$("model-select").value && !!$("biz-date").value;
+  $("btn-init").disabled = !(ready && $("init-batch").value.trim() && initFile);
+  $("btn-recalc").disabled = !(ready && $("basis-batch").value.trim() &&
+                               $("new-batch").value.trim() && recalcFile);
+}
+
+// ---------------------------------------------------------------------------
+// 2. 批次状态
+// ---------------------------------------------------------------------------
+async function refreshState() {
+  const model = $("model-select").value;
+  const date = $("biz-date").value;
+  const box = $("state-box");
+  currentBatchId = null;
+  if (!model || !date) {
+    box.innerHTML = "";
+    updateButtons();
+    return;
+  }
+  try {
+    const res = await apiJSON(`/api/posting/state?model_name=${encodeURIComponent(model)}&business_date=${encodeURIComponent(date)}`);
+    currentBatchId = res.current_batch_id;
+    if (currentBatchId) {
+      $("basis-batch").value = currentBatchId;
+    }
+    box.innerHTML = renderState(res);
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-error" style="margin:0"><span>⛔</span><span>${escapeHtml(err.message)}</span></div>`;
+  }
+  updateButtons();
+}
+
+function renderState(res) {
+  const cur = res.current_batch_id;
+  let html = `<div class="state-line"><span class="lbl">当前依据批：</span>` +
+    (cur ? `<span class="mono">${escapeHtml(cur)}</span> <span class="tag tag-current">当前依据</span>`
+         : `<span class="tag tag-plain">尚未登记</span>`) + `</div>`;
+  if (res.batches.length) {
+    html += `<table class="data-table"><thead><tr>
+      <th>批号</th><th>类型</th><th>依据批</th><th>分录数</th><th>登记时间</th><th></th>
+    </tr></thead><tbody>` +
+    res.batches.map(b => `<tr>
+      <td class="mono">${escapeHtml(b.batch_id)}${b.batch_id === cur ? ' <span class="tag tag-current">当前</span>' : ""}</td>
+      <td>${b.kind === "initial" ? '<span class="tag tag-initial">初始</span>' : '<span class="tag tag-recalc">复算</span>'}</td>
+      <td class="mono">${b.basis_batch_id ? escapeHtml(b.basis_batch_id) : "—"}</td>
+      <td>${b.entry_count}</td>
+      <td class="mono" style="font-size:12px">${escapeHtml(b.created_at)}</td>
+      <td>${b.kind === "recalc" ? `<a class="link-btn" href="/api/posting/batches/${encodeURIComponent(b.batch_id)}/entries.csv">下载分录</a>` : ""}</td>
+    </tr>`).join("") + `</tbody></table>`;
+  } else {
+    html += `<p class="hint">该模型、业务日尚未登记任何批次，请先在下方登记初始入账批。</p>`;
+  }
+  return html;
+}
+
+// ---------------------------------------------------------------------------
+// 3. 登记初始入账批
+// ---------------------------------------------------------------------------
+async function submitInitial() {
+  const fd = new FormData();
+  fd.append("payload", JSON.stringify(payload));
+  fd.append("model_name", $("model-select").value);
+  fd.append("business_date", $("biz-date").value);
+  fd.append("batch_id", $("init-batch").value.trim());
+  fd.append("file", initFile);
+  setLoading(true, "登记初始入账批…");
+  showAlert("", "");
+  try {
+    const res = await apiJSON("/api/posting/initial", { method: "POST", body: fd });
+    showAlert("ok", `初始入账批「${res.batch_id}」登记成功，共 ${res.row_count} 笔交易，未产生分录。`);
+    $("init-batch").value = "";
+    await refreshState();
+  } catch (err) {
+    showAlert("error", err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. 提交复算结果
+// ---------------------------------------------------------------------------
+async function submitRecalc() {
+  const fd = new FormData();
+  fd.append("payload", JSON.stringify(payload));
+  fd.append("model_name", $("model-select").value);
+  fd.append("business_date", $("biz-date").value);
+  fd.append("basis_batch_id", $("basis-batch").value.trim());
+  fd.append("new_batch_id", $("new-batch").value.trim());
+  fd.append("file", recalcFile);
+  setLoading(true, "对比两批并生成补记单…");
+  showAlert("", "");
+  try {
+    const res = await apiJSON("/api/posting/recalc", { method: "POST", body: fd });
+    renderEntries(res);
+    if (res.replayed) {
+      showAlert("warn", `批号「${res.batch_id}」已按相同依据批和原文件提交过，返回原补记单（${res.entry_count} 条分录），未重复生成。`);
+    } else {
+      showAlert("ok", `复算完成：新批「${res.batch_id}」已登记并成为当前依据批，共 ${res.entry_count} 条分录。`);
+    }
+    $("new-batch").value = "";
+    await refreshState();
+  } catch (err) {
+    showAlert("error", err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderEntries(res) {
+  const box = $("entries-body");
+  if (!res.entries.length) {
+    box.innerHTML = `<div class="empty"><div class="big">🫙</div>
+      <div>两批对比无差额，未产生分录。</div></div>`;
+    return;
+  }
+  const rows = res.entries.map(e => {
+    const cls = e.amount > 0 ? "amount-pos" : "amount-neg";
+    const sign = e.amount > 0 ? "+" : "";
+    return `<tr>
+      <td class="mono">${escapeHtml(e.transaction_id)}</td>
+      <td class="mono">${escapeHtml(e.company_id)}</td>
+      <td class="mono ${cls}" style="text-align:right">${sign}${e.amount}</td>
+    </tr>`;
+  }).join("");
+  box.innerHTML = `
+    <div class="entry-summary">补记单「<span class="mono">${escapeHtml(res.batch_id)}</span>」
+      共 ${res.entry_count} 条分录（单位：分，正=补记，负=冲回）
+      · <a class="link-btn" href="${res.download_url}">下载分录 CSV</a></div>
+    <table class="data-table">
+      <thead><tr><th>交易号</th><th>公司</th><th style="text-align:right">金额（分）</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:10px">
+      <a class="btn" href="${res.download_url}" style="text-decoration:none">⬇ 下载分录 CSV</a>
+    </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// 样例与文件选择
+// ---------------------------------------------------------------------------
+async function useSampleCsv(kind) {
+  setLoading(true, "载入样例 CSV…");
+  try {
+    const resp = await fetch(`/api/posting/sample/${kind}.csv`);
+    if (!resp.ok) throw new Error("样例 CSV 获取失败");
+    const blob = await resp.blob();
+    const file = new File([blob], `sample_${kind}.csv`, { type: "text/csv" });
+    if (kind === "initial") {
+      initFile = file;
+      $("init-file-name").textContent = "已选择样例：sample_initial.csv（4 笔交易）";
+    } else {
+      recalcFile = file;
+      $("recalc-file-name").textContent = "已选择样例：sample_recalc.csv（含一笔交易换公司）";
+    }
+    updateButtons();
+  } catch (err) {
+    showAlert("error", err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+$("btn-sample").addEventListener("click", async () => {
+  setLoading(true, "载入结算样例…");
+  try {
+    const resp = await fetch("/api/posting/sample");
+    const data = await resp.json();
+    await loadPayload(data, "结算样例 sample_settlement.json");
+    // 预填样例批号与业务日，便于一键演示
+    if (payload) {
+      $("model-select").value = "ads_transaction_settlement";
+      $("biz-date").value = "2025-06-01";
+      $("init-batch").value = "INIT-20250601";
+      $("new-batch").value = "RECALC-20250601-1";
+      await refreshState();
+    }
+  } catch (err) {
+    showAlert("error", err.message);
+  } finally {
+    setLoading(false);
+  }
+});
+
+$("file-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (err) { showAlert("error", "JSON 解析失败：" + err.message); return; }
+    await loadPayload(data, "已上传：" + file.name);
+  } finally {
+    e.target.value = "";
+  }
+});
+
+$("init-file").addEventListener("change", (e) => {
+  initFile = e.target.files[0] || null;
+  $("init-file-name").textContent = initFile ? "已选择：" + initFile.name : "";
+  updateButtons();
+});
+
+$("recalc-file").addEventListener("change", (e) => {
+  recalcFile = e.target.files[0] || null;
+  $("recalc-file-name").textContent = recalcFile ? "已选择：" + recalcFile.name : "";
+  updateButtons();
+});
+
+$("btn-init-sample").addEventListener("click", () => useSampleCsv("initial"));
+$("btn-recalc-sample").addEventListener("click", () => useSampleCsv("recalc"));
+$("btn-init").addEventListener("click", submitInitial);
+$("btn-recalc").addEventListener("click", submitRecalc);
+$("model-select").addEventListener("change", refreshState);
+$("biz-date").addEventListener("change", refreshState);
+["init-batch", "basis-batch", "new-batch"].forEach(id =>
+  $(id).addEventListener("input", updateButtons));
+</script>
+</body>
+</html>
